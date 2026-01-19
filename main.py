@@ -9,7 +9,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from sqlalchemy import Select
 from sqlalchemy.orm import Session
-from schemas import PostCreate, PostResponse
+from schemas import PostCreate, PostResponse, UserCreate, UserResponse
 
 import models
 from database import Base, engine, get_db
@@ -28,24 +28,6 @@ app.mount("/media", StaticFiles(directory="media"), name="media")
 
 # Initialize Jinja2 templates
 templates = Jinja2Templates(directory="templates")
-
-# Sample in-memory data for posts prototyping
-posts: list[dict] = [
-    {
-        "id": 1,
-        "author": "Jay Tusar",
-        "title": "Working with FastAPI",
-        "content": "This framework is really easy to use and super fast.",
-        "date_posted": "January 15, 2026",
-    },
-    {
-        "id": 2,
-        "author": "Jane Doe",
-        "title": "Python is Great for Web Development",
-        "content": "Python is a great language for web development, and FastAPI makes it even better.",
-        "date_posted": "January 16, 2026",
-    },
-]
 
 # Home page route
 @app.get("/", include_in_schema=False, name="home")
@@ -66,6 +48,33 @@ def single_post_page(request: Request, post_id: int):
             )   
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                         detail=f"Post not found!")
+
+# API route to get all users
+@app.post(
+    "/api/users",
+    response_model=UserResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_user(user: UserCreate, db: Annotated[Session, Depends(get_db)]):
+    result = db.execute(
+        Select(models.User).where(models.User.username == user.username),
+    )
+    existing_user = result.scalars().first()
+
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Username already exists!",
+        )
+    db_user = models.User(
+        username=user.username,
+        email=user.email,
+    )
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+    return db_user
+    
 
 # API route to get all posts
 @app.get("/api/posts", response_model=list[PostResponse])
