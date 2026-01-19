@@ -7,6 +7,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database import Base
 
+
 # User model representing a user in the system
 class User(Base):
     __tablename__ = "users"
