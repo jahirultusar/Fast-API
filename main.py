@@ -49,7 +49,7 @@ def single_post_page(request: Request, post_id: int):
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                         detail=f"Post not found!")
 
-# API route to get all users
+# API route to create and validate users
 @app.post(
     "/api/users",
     response_model=UserResponse,
@@ -66,19 +66,49 @@ def create_user(user: UserCreate, db: Annotated[Session, Depends(get_db)]):
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Username already exists!",
         )
-    db_user = models.User(
+
+    result = db.execute(
+        Select(models.User).where(models.User.email == user.email),
+    )
+    existing_email = result.scalars().first()
+
+    if existing_email:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email already exists!",
+        )
+    
+    new_user = models.User(
         username=user.username,
         email=user.email,
     )
-    db.add(db_user)
+    db.add(new_user)
     db.commit()
-    db.refresh(db_user)
-    return db_user
+    db.refresh(new_user)
     
+    return new_user
+
+
+# API route to get a single user by ID
+@app.get("/api/users/{user_id}", response_model=UserResponse)
+def get_user(user_id: int, db: Annotated[Session, Depends(get_db)]):
+    result = db.execute(
+        Select(models.User).where(models.User.id == user_id),
+    )
+    user = result.scalars().first()
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found!",
+        )
+    
+    return user
+
 
 # API route to get all posts
 @app.get("/api/posts", response_model=list[PostResponse])
-def get_posts():
+def get_user():
     return posts
 
 # API route to create a new post
