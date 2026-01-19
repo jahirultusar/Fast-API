@@ -16,7 +16,7 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 # Initialize Jinja2 templates
 templates = Jinja2Templates(directory="templates")
 
-# Sample in-memory data for blog posts
+# Sample in-memory data for posts prototyping
 posts: list[dict] = [
     {
         "id": 1,
