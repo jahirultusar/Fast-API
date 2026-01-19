@@ -59,6 +59,24 @@ def single_post_page(request: Request, post_id: int):
 def get_posts():
     return posts
 
+# API route to create a new post
+@app.post(
+    "/api/posts",
+    response_model=PostResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_post(post: PostCreate):
+    new_id = max(p["id"] for p in posts) + 1 if posts else 1
+    new_post = {
+        "id": new_id,
+        "author": post.author,
+        "title": post.title,
+        "content": post.content,
+        "date_posted": "January 19, 2026",
+    }
+    posts.append(new_post)
+    return new_post
+
 # API route to get a single post by ID
 @app.get("/api/posts/{post_id}", response_model=PostResponse)
 def get_posts(post_id: int):
