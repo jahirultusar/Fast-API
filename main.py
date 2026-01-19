@@ -5,11 +5,18 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from schemas import PostCreate, PostResponse
+
+# Initialize FastAPI app
 app = FastAPI()
+
+# Mount static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
+# Initialize Jinja2 templates
 templates = Jinja2Templates(directory="templates")
 
+# Sample in-memory data for blog posts
 posts: list[dict] = [
     {
         "id": 1,
@@ -48,12 +55,12 @@ def single_post_page(request: Request, post_id: int):
                         detail=f"Post not found!")
 
 # API route to get all posts
-@app.get("/api/posts")
+@app.get("/api/posts", response_model=list[PostResponse])
 def get_posts():
     return posts
 
 # API route to get a single post by ID
-@app.get("/api/posts/{post_id}")
+@app.get("/api/posts/{post_id}", response_model=PostResponse)
 def get_posts(post_id: int):
     for post in posts:
         if post.get("id") == post_id:
