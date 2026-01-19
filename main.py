@@ -32,22 +32,28 @@ templates = Jinja2Templates(directory="templates")
 # Home page route
 @app.get("/", include_in_schema=False, name="home")
 @app.get("/posts", include_in_schema=False, name="posts")
-def home(request: Request):
+def home(request: Request, db: Annotated[Session, Depends(get_db)]):
+    result = db.execute(Select(models.Post))
+    posts = result.scalars().all()
     return templates.TemplateResponse(
-        request, "home.html", context={"posts": posts, "title": "Home"},
-    )   
+        request,
+        "home.html",
+        {"posts": posts, "title": "Home"},
+    )
 
 # Single blog post page route
 @app.get("/posts/{post_id}", include_in_schema=False)
-def single_post_page(request: Request, post_id: int):
-    for post in posts:
-        if post.get("id") == post_id:
-            title = post["title"][:50]
-            return templates.TemplateResponse(
-                request, "post.html", context={"post": post, "title": title},
-            )   
-    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                        detail=f"Post not found!")
+def post_page(request: Request, post_id: int, db: Annotated[Session, Depends(get_db)]):
+    result = db.execute(Select(models.Post).where(models.Post.id == post_id))
+    post = result.scalars().first()
+    if post:
+        title = post.title[:50]
+        return templates.TemplateResponse(
+            request,
+            "post.html",
+            {"post": post, "title": title},
+        )
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found")
 
 # API route to create and validate users
 @app.post(
@@ -105,6 +111,20 @@ def get_user(user_id: int, db: Annotated[Session, Depends(get_db)]):
     
     return user
 
+# API route to get all posts by a specific user
+@app.get("/api/users/{user_id}/posts", response_model=list[PostResponse])
+def get_user_posts(user_id: int, db: Annotated[Session, Depends(get_db)]):
+    result = db.execute(Select(models.User).where(models.User.id == user_id))
+    user = result.scalars().first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
+
+    result = db.execute(Select(models.Post).where(models.Post.user_id == user_id))
+    posts = result.scalars().all()
+    return posts
 
 # API route to get all posts
 @app.get("/api/posts", response_model=list[PostResponse])
