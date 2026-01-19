@@ -26,7 +26,7 @@ class PostBase(BaseModel):
 
 # Schema for creating a new post
 class PostCreate(PostBase):
-    User_id: int    ##### TEMPORARY
+    user_id: int    ##### TEMPORARY
 
 # Schema for responding with a post
 class PostResponse(PostBase):

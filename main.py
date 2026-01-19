@@ -7,7 +7,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from sqlalchemy import Select
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 from schemas import PostCreate, PostResponse, UserCreate, UserResponse
 
@@ -33,7 +33,7 @@ templates = Jinja2Templates(directory="templates")
 @app.get("/", include_in_schema=False, name="home")
 @app.get("/posts", include_in_schema=False, name="posts")
 def home(request: Request, db: Annotated[Session, Depends(get_db)]):
-    result = db.execute(Select(models.Post))
+    result = db.execute(select(models.Post))
     posts = result.scalars().all()
     return templates.TemplateResponse(
         request,
@@ -44,7 +44,7 @@ def home(request: Request, db: Annotated[Session, Depends(get_db)]):
 # Single blog post page route
 @app.get("/posts/{post_id}", include_in_schema=False)
 def post_page(request: Request, post_id: int, db: Annotated[Session, Depends(get_db)]):
-    result = db.execute(Select(models.Post).where(models.Post.id == post_id))
+    result = db.execute(select(models.Post).where(models.Post.id == post_id))
     post = result.scalars().first()
     if post:
         title = post.title[:50]
@@ -62,7 +62,7 @@ def user_posts_page(
     user_id: int,
     db: Annotated[Session, Depends(get_db)],
 ):
-    result = db.execute(Select(models.User).where(models.User.id == user_id))
+    result = db.execute(select(models.User).where(models.User.id == user_id))
     user = result.scalars().first()
     if not user:
         raise HTTPException(
@@ -70,7 +70,7 @@ def user_posts_page(
             detail="User not found",
         )
 
-    result = db.execute(Select(models.Post).where(models.Post.user_id == user_id))
+    result = db.execute(select(models.Post).where(models.Post.user_id == user_id))
     posts = result.scalars().all()
     return templates.TemplateResponse(
         request,
@@ -86,7 +86,7 @@ def user_posts_page(
 )
 def create_user(user: UserCreate, db: Annotated[Session, Depends(get_db)]):
     result = db.execute(
-        Select(models.User).where(models.User.username == user.username),
+        select(models.User).where(models.User.username == user.username),
     )
     existing_user = result.scalars().first()
 
@@ -97,7 +97,7 @@ def create_user(user: UserCreate, db: Annotated[Session, Depends(get_db)]):
         )
 
     result = db.execute(
-        Select(models.User).where(models.User.email == user.email),
+        select(models.User).where(models.User.email == user.email),
     )
     existing_email = result.scalars().first()
 
@@ -122,7 +122,7 @@ def create_user(user: UserCreate, db: Annotated[Session, Depends(get_db)]):
 @app.get("/api/users/{user_id}", response_model=UserResponse)
 def get_user(user_id: int, db: Annotated[Session, Depends(get_db)]):
     result = db.execute(
-        Select(models.User).where(models.User.id == user_id),
+        select(models.User).where(models.User.id == user_id),
     )
     user = result.scalars().first()
 
@@ -137,7 +137,7 @@ def get_user(user_id: int, db: Annotated[Session, Depends(get_db)]):
 # API route to get all posts by a specific user
 @app.get("/api/users/{user_id}/posts", response_model=list[PostResponse])
 def get_user_posts(user_id: int, db: Annotated[Session, Depends(get_db)]):
-    result = db.execute(Select(models.User).where(models.User.id == user_id))
+    result = db.execute(select(models.User).where(models.User.id == user_id))
     user = result.scalars().first()
     if not user:
         raise HTTPException(
@@ -145,14 +145,14 @@ def get_user_posts(user_id: int, db: Annotated[Session, Depends(get_db)]):
             detail="User not found",
         )
 
-    result = db.execute(Select(models.Post).where(models.Post.user_id == user_id))
+    result = db.execute(select(models.Post).where(models.Post.user_id == user_id))
     posts = result.scalars().all()
     return posts
 
 # API route to get all posts
 @app.get("/api/posts", response_model=list[PostResponse])
 def get_posts(db: Annotated[Session, Depends(get_db)]):
-    result = db.execute(Select(models.Post))
+    result = db.execute(select(models.Post))
     posts = result.scalars().all()
     return posts
 
@@ -163,14 +163,13 @@ def get_posts(db: Annotated[Session, Depends(get_db)]):
     status_code=status.HTTP_201_CREATED,
 )
 def create_post(post: PostCreate, db: Annotated[Session, Depends(get_db)]):
-    result = db.execute(Select(models.User).where(models.User.id == post.user_id))
+    result = db.execute(select(models.User).where(models.User.id == post.user_id))
     user = result.scalars().first()
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found",
         )
-
     new_post = models.Post(
         title=post.title,
         content=post.content,
@@ -184,7 +183,7 @@ def create_post(post: PostCreate, db: Annotated[Session, Depends(get_db)]):
 # API route to get a single post by ID
 @app.get("/api/posts/{post_id}", response_model=PostResponse)
 def get_post(post_id: int, db: Annotated[Session, Depends(get_db)]):
-    result = db.execute(Select(models.Post).where(models.Post.id == post_id))
+    result = db.execute(select(models.Post).where(models.Post.id == post_id))
     post = result.scalars().first()
     if post:
         return post
