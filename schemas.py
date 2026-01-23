@@ -28,7 +28,7 @@ class PostBase(BaseModel):
 class PostCreate(PostBase):
     user_id: int    ##### TEMPORARY
 
-# Base schema for posts creation 
+# Schema for updating a post
 class PostUpdate(BaseModel):
     title: str | None = Field(default=None, min_length=1, max_length=100)
     content: str | None = Field(default=None,min_length=1)

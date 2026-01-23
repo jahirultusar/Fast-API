@@ -10,3 +10,9 @@ hp-printe 1672 root    5u  IPv6  19163      0t0  TCP *:8000 (LISTEN)
 
 # to kill that specific process to free up port 8000
 => sudo kill 1672
+
+
+#bugLog_1 23/01 10:48
+
+need to fix the edge case where if the content body has content "inside the inverted commas, then json fails to create or update the post"
+
